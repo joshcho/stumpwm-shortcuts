@@ -1,0 +1,1 @@
+A WIP contrib module to [[https://github.com/stumpwm/stumpwm][StumpWM]] that adds shortcuts and toggle windows. Inspired by [[https://github.com/Guake/guake][Drop-down Terminals]].
