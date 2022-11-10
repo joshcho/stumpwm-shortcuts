@@ -140,8 +140,7 @@
            (action-name (car menu-selection)))
       (when menu-selection
         (switch (action-name :test #'equal)
-          ("Don't float" (when (float-window-p win)
-                           (message "Already a float window.")))
+          ("Don't float" (add-shortcut-internal shortcut win))
           ("Unbind" (remove-shortcut-internal shortcut))
           (t (let* ((preset-name action-name)
                     (preset (if (equal preset-name "Unchanged")
@@ -167,6 +166,4 @@
      ("F11" . "add-shortcut F11")
      ("F12" . "add-shortcut F12")
      ("Home" . "add-shortcut Home")
-     ("C-Home" . "add-shortcut Home")
-     ("SunPageUp" . "add-shortcut SunPageUp")
-     ("C-SunPageUp" . "add-shortcut SunPageUp")))
+     ("SunPageUp" . "add-shortcut SunPageUp")))
