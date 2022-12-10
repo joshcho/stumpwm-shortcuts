@@ -1,1 +1,37 @@
 A WIP contrib module to [[https://github.com/stumpwm/stumpwm][StumpWM]] that adds shortcuts and toggle windows. Inspired by [[https://github.com/Guake/guake][Drop-down Terminals]].
+
+To save a window preset, use the ~save-window-preset~ command. This command takes a label as an argument and saves the current window's position, size, and layout as a preset. To load a saved window preset, use the toggle-window command and enter the label of the preset as the shortcut.
+
+The add-shortcut and ~add-shortcut-float~ commands can be used to add a shortcut for a specific window. The ~add-shortcut~ command takes a window and a shortcut as arguments, and adds the window to the current group with the specified shortcut. The ~add-shortcut-float~ command is similar, but it also floats the window.
+
+The show-shortcuts command can be used to view the available shortcuts in the current group. It takes no arguments and prints a list of all the available shortcuts in the current group.
+
+For example, to save the current window as a preset with the label "emacs", you would use the following command:
+
+#+begin_src emacs-lisp
+(save-window-preset "emacs")
+#+end_src
+
+To load the "emacs" window preset, you would use the following command:
+
+#+begin_src emacs-lisp
+(toggle-window "emacs")
+#+end_src
+
+To add a shortcut for the current window, with the shortcut "w", you would use the following command:
+
+#+begin_src emacs-lisp
+(add-shortcut (current-window) "w")
+#+end_src
+
+To float the current window and add a shortcut for it, with the shortcut "f", you would use the following command:
+
+#+begin_src emacs-lisp
+(add-shortcut-float (current-window) "f")
+#+end_src
+
+To view the available shortcuts in the current group, you would use the following command:
+
+#+begin_src emacs-lisp
+(show-shortcuts)
+#+end_src
