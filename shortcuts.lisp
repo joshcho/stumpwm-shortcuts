@@ -3,6 +3,8 @@
 (export '(toggle-window show-shortcuts add-shortcut add-shortcut-float))
 ;; requires group-mappings
 
+;; There seems to be a bug with height
+
 ;; window presets
 (defstruct window-preset
   width
@@ -64,10 +66,7 @@
        :x (window-preset-x preset)
        :y (window-preset-y preset)
        :width (window-preset-width preset)
-       :height (+ (window-preset-height preset)
-                  (if (equal (window-class (current-window)) "Emacs")
-                      3
-                      0)))
+       :height (window-preset-height preset))
       (message "Must apply preset to a float-window.")))
 
 ;; window shortcuts IDEA: floating frames, not floating windows?
@@ -86,13 +85,20 @@
     ((:string "Enter Shortcut: "))
   (if-let (win (window-by-shortcut shortcut))
     (if (equal win (current-window))
-        (hide-window (current-window))
+        (progn
+          (setf (group-on-top-windows (current-group))
+                (remove win (group-on-top-windows (current-group))))
+          (hide-window (current-window)))
         (if (member win (group-windows (current-group)))
             (progn
-              (when (and (not (find (current-window) (group-on-top-windows (current-group))
-                                    :test #'equalp))
-                         (typep (current-window) 'float-window))
-                (hide-window (current-window)))
+              (when (not (find win (group-on-top-windows (current-group))))
+                ;; putting win at the end makes more sense, but there
+                ;; are rendering issuse
+                (push win (group-on-top-windows (current-group))))
+              ;; (when (and (not (find (current-window) (group-on-top-windows (current-group))
+              ;;                       :test #'equalp))
+              ;;            (typep (current-window) 'float-window))
+              ;;   (hide-window (current-window)))
               (focus-window win))
             (progn
               (remove-shortcut-internal shortcut)
@@ -127,43 +133,54 @@
   (define-key-in-group *top-map* (kbd shortcut) nil (current-group))
   (remhash shortcut (current-window-shortcuts)))
 
-(defcommand add-shortcut (shortcut)
+(defcommand toggle-shortcut (shortcut)
     ((:string "Shortcut: "))
   (let ((win (current-window)))
-    (let* ((labeled-presets (all-window-presets))
-           (menu-selection (select-from-menu (current-screen)
-                                             (append
-                                              (list "Don't float")
-                                              (mapcar #'car labeled-presets)
-                                              (list "Unchanged" "Unbind"))
-                                             "Choose Preset:"))
-           (action-name (car menu-selection)))
-      (when menu-selection
-        (switch (action-name :test #'equal)
-          ("Don't float" (add-shortcut-internal shortcut win))
-          ("Unbind" (remove-shortcut-internal shortcut))
-          (t (let* ((preset-name action-name)
-                    (preset (if (equal preset-name "Unchanged")
-                                (extract-window-preset (current-window))
-                                (window-preset preset-name))))
-               (add-shortcut-internal shortcut win)
-               (when preset
-                 (unless (typep win 'float-window)
-                   (float-window win (window-group win)))
-                 (apply-window-preset (current-window) preset)))))))))
+    (if (eql win (window-by-shortcut shortcut))
+        (progn
+          (unfloat-window win (current-group))
+          (remove-shortcut-internal shortcut))
+        (let* ((labeled-presets (all-window-presets))
+               (menu-selection (select-from-menu (current-screen)
+                                                 (append
+                                                  ;; (list "Unbind")
+                                                  (mapcar #'car labeled-presets)
+                                                  (list "Unchanged" "Don't float"))
+                                                 "Choose Preset:"))
+               (action-name (car menu-selection)))
+          (when menu-selection
+            (switch (action-name :test #'equal)
+              ("Don't float" (add-shortcut-internal shortcut win))
+              ;; ("Unbind" (progn
+              ;;             (unfloat-this)
+              ;;             (remove-shortcut-internal shortcut)))
+              (t (let* ((preset-name action-name)
+                        (preset (if (equal preset-name "Unchanged")
+                                    (extract-window-preset win)
+                                    (window-preset preset-name))))
+                   (progn
+                     (when-let (shortcut-win (window-by-shortcut shortcut))
+                       (progn
+                         (unfloat-window shortcut-win (current-group))
+                         (remove-shortcut-internal shortcut)))
+                     (add-shortcut-internal shortcut win))
+                   (when preset
+                     (unless (typep win 'float-window)
+                       (float-window win (window-group win)))
+                     (apply-window-preset win preset))))))))))
 
 (define-key-n *root-map*
-    (("@" . "add-shortcut @")
-     ("#" . "add-shortcut #")
-     ("$" . "add-shortcut $")
-     ("!" . "add-shortcut !")
+    (("@" . "toggle-shortcut @")
+     ("#" . "toggle-shortcut #")
+     ("$" . "toggle-shortcut $")
+     ("!" . "toggle-shortcut !")
      ;; F1 and F4 don't work on advantage ??
-     ("F2" . "add-shortcut F2")
-     ("F3" . "add-shortcut F3")
-     ("F5" . "add-shortcut F5")
-     ("F9" . "add-shortcut F9")
-     ("F10" . "add-shortcut F10")
-     ("F11" . "add-shortcut F11")
-     ("F12" . "add-shortcut F12")
-     ("Home" . "add-shortcut Home")
-     ("SunPageUp" . "add-shortcut SunPageUp")))
+     ("F2" . "toggle-shortcut F2")
+     ("F3" . "toggle-shortcut F3")
+     ("F5" . "toggle-shortcut F5")
+     ("F9" . "toggle-shortcut F9")
+     ("F10" . "toggle-shortcut F10")
+     ("F11" . "toggle-shortcut F11")
+     ("F12" . "toggle-shortcut F12")
+     ("Home" . "toggle-shortcut Home")
+     ("SunPageUp" . "toggle-shortcut SunPageUp")))
